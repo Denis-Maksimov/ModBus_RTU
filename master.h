@@ -1,0 +1,6 @@
+#ifndef MODBUS_MASTER_H
+#define MODBUS_MASTER_H
+
+
+
+#endif // !MODBUS_MASTER_H
