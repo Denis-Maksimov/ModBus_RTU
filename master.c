@@ -45,7 +45,7 @@ enum modbus_cmd_t
  * -----------------------------------------------------------------------------------------------------------
  * готовит фрейм PDU для функции чтения n флагов с устройства
  * ***********************************************************************************************************/
-struct raw_packet* _ModBus_Read_Coils(short Starting_Address, short Quantity_of_coils)
+static struct raw_packet* _ModBus_Read_Coils(short Starting_Address, short Quantity_of_coils)
 {       
     struct raw_packet* PDU = malloc(sizeof(struct raw_packet));
     PDU->n=1+2+2;
@@ -77,7 +77,7 @@ struct raw_packet* _ModBus_Read_Coils(short Starting_Address, short Quantity_of_
  * -----------------------------------------------------------------------------------------------------------
  * готовит фрейм PDU для функции чтения n входов с устройства
  * ***********************************************************************************************************/
-struct raw_packet* _ModBus_Read_Discrete_Inputs(short Starting_Address, short Quantity_of_inputs)
+static struct raw_packet* _ModBus_Read_Discrete_Inputs(short Starting_Address, short Quantity_of_inputs)
 {
     struct raw_packet* PDU = malloc(sizeof(struct raw_packet));
     PDU->n=1+2+2;
@@ -104,16 +104,16 @@ struct raw_packet* _ModBus_Read_Discrete_Inputs(short Starting_Address, short Qu
  *  -----------------------------------------------------------------------------------------------------------
  * готовит фрейм PDU для функции чтения n регистров с устройства
  * ***********************************************************************************************************/
-struct raw_packet* _ModBus_Read_Holding_Registers(short Starting_Address, short Quantity_of_regs)
+static struct raw_packet* _ModBus_Read_Holding_Registers(short Starting_Address, short Quantity_of_regs)
 {
     struct raw_packet* PDU = malloc(sizeof(struct raw_packet));
     PDU->n=1+2+2;
     PDU->packet= malloc(5);
 
     PDU->packet[0]=MODBUS_READ_HOLDING_REGISTERS;
-    short* ptr_tmp=(short*)PDU->packet+1;
-    ptr_tmp[0]=Starting_Address;
-    ptr_tmp[1]=Quantity_of_regs;
+    short* ptr_tmp=(short*)((PDU->packet)+1);
+    ptr_tmp[0]=endian_word(Starting_Address);
+    ptr_tmp[1]=endian_word(Quantity_of_regs);
     return PDU;
 }
 
@@ -131,16 +131,16 @@ struct raw_packet* _ModBus_Read_Holding_Registers(short Starting_Address, short 
  *-----------------------------------------------------------------------------------------------------------
  * готовит фрейм PDU для функции чтения n регистров с устройства
  * ***********************************************************************************************************/
-struct raw_packet* _ModBus_Read_Input_Registers(short Starting_Address, short Quantity_of_regs)
+static struct raw_packet* _ModBus_Read_Input_Registers(short Starting_Address, short Quantity_of_regs)
 {
     struct raw_packet* PDU = malloc(sizeof(struct raw_packet));
     PDU->n=1+2+2;
     PDU->packet= malloc(5);
 
     PDU->packet[0]=MODBUS_READ_INPUT_REGISTERS;
-    short* ptr_tmp=(short*)PDU->packet+1;
-    ptr_tmp[0]=Starting_Address;
-    ptr_tmp[1]=Quantity_of_regs;
+    short* ptr_tmp=(short*)((PDU->packet)+1);
+    ptr_tmp[0]=endian_word(Starting_Address);
+    ptr_tmp[1]=endian_word(Quantity_of_regs);
     return PDU;
 }
 
@@ -158,7 +158,7 @@ struct raw_packet* _ModBus_Read_Input_Registers(short Starting_Address, short Qu
  *-----------------------------------------------------------------------------------------------------------
  * готовит фрейм PDU для функции чтения n регистров с устройства
  * ***********************************************************************************************************/
-struct raw_packet* _ModBus_Write_Single_Coil(short Address, short Value)
+static struct raw_packet* _ModBus_Write_Single_Coil(short Address, short Value)
 {
     (Value)?(Value=0xFF00):(Value=0);
     struct raw_packet* PDU = malloc(sizeof(struct raw_packet));
@@ -166,9 +166,9 @@ struct raw_packet* _ModBus_Write_Single_Coil(short Address, short Value)
     PDU->packet= malloc(5);
 
     PDU->packet[0]=MODBUS_WRITE_SINGLE_COIL;
-    short* ptr_tmp=(short*)PDU->packet+1;
-    ptr_tmp[0]=Address;
-    ptr_tmp[1]=Value;
+    short* ptr_tmp=(short*)((PDU->packet)+1);
+    ptr_tmp[0]=endian_word(Address);
+    ptr_tmp[1]=endian_word(Value);
     return PDU;
 }
 /***********************************************************************************************************
@@ -184,17 +184,17 @@ struct raw_packet* _ModBus_Write_Single_Coil(short Address, short Value)
  *-----------------------------------------------------------------------------------------------------------
  * готовит фрейм PDU для функции записи регистра в устройстве
  * ***********************************************************************************************************/
-struct raw_packet* _ModBus_Write_Single_Register(short Address, short Value)
+static struct raw_packet* _ModBus_Write_Single_Register(short Address, short Value)
 {
-    (Value)?(Value=0xFF00):(Value=0);
+   // (Value)?(Value=0xFF00):(Value=0);
     struct raw_packet* PDU = malloc(sizeof(struct raw_packet));
     PDU->n=1+2+2;
     PDU->packet= malloc(5);
 
     PDU->packet[0]=MODBUS_WRITE_SINGLE_REGISTER;
-    short* ptr_tmp=(short*)PDU->packet+1;
-    ptr_tmp[0]=Address;
-    ptr_tmp[1]=Value;
+    short* ptr_tmp=(short*)((PDU->packet)+1);
+    ptr_tmp[0]=endian_word(Address);
+    ptr_tmp[1]=endian_word(Value);
     return PDU;
 }
 /***********************************************************************************************************
@@ -211,7 +211,7 @@ struct raw_packet* _ModBus_Write_Single_Register(short Address, short Value)
  *-----------------------------------------------------------------------------------------------------------
  * готовит фрейм PDU для функции груповой записи флагов в устройстве
  * ***********************************************************************************************************/
-struct raw_packet* _ModBus_Write_Multiple_Coils(short Starting_Address, short Quantity_of_Outputs, char byte_count, char* Outputs_Value)
+static struct raw_packet* _ModBus_Write_Multiple_Coils(short Starting_Address, short Quantity_of_Outputs, char byte_count, char* Outputs_Value)
 {
     // //-- считаем число байтов
     // int byte_count=0;
@@ -221,9 +221,9 @@ struct raw_packet* _ModBus_Write_Multiple_Coils(short Starting_Address, short Qu
     PDU->packet= malloc(PDU->n);
 
     PDU->packet[0]=MODBUS_WRITE_MULTIPLE_COILS;
-    short* ptr_tmp=(short*)PDU->packet+1;
-    ptr_tmp[0]=Starting_Address;
-    ptr_tmp[1]=Quantity_of_Outputs;
+    short* ptr_tmp=(short*)((PDU->packet)+1);
+    ptr_tmp[0]=endian_word(Starting_Address);
+    ptr_tmp[1]=endian_word(Quantity_of_Outputs);
     PDU->packet[5]=byte_count;
     for(int i=6;i<byte_count+6;i++)// #offset=6
     {
@@ -232,7 +232,7 @@ struct raw_packet* _ModBus_Write_Multiple_Coils(short Starting_Address, short Qu
     return PDU;
 }
 
-struct raw_packet* _ModBus_Write_Multiple_Register(void*a)
+static struct raw_packet* _ModBus_Write_Multiple_Register(void*a)
 {
     //TODO
     return (struct raw_packet*)MODBUS_WRITE_MULTIPLE_REGISTER;
@@ -241,14 +241,8 @@ struct raw_packet* _ModBus_Write_Multiple_Register(void*a)
 
 
 //----------------------------------------------------------------
-
-void master_ModBus_Read_Coils(char destination_addres, short Starting_Address, short Quantity_of_coils)
-{
-    struct raw_packet* PDU = _ModBus_Read_Coils(Starting_Address, Quantity_of_coils);
-    struct raw_packet* raw = pack_data(destination_addres, PDU->packet, PDU->n);
-    // send( rs485, raw );
-    print_raw(PDU);
-    print_raw(raw);
+static void assertion(struct raw_packet* raw){
+    printf("raw: "); print_raw(raw);
     char* s=unpack_data(raw->packet, raw->n);
     printf("unpacking PDU: ");
     for(int i=0;i<raw->n-3;i++)
@@ -256,12 +250,23 @@ void master_ModBus_Read_Coils(char destination_addres, short Starting_Address, s
         (i)?(printf("-")):(i);
         printf("0x%02X",s[i]&0xff);
         fflush(stdout);
-
     }
+    free(s);
     printf("\n");
+}
+//----------------------------------------------------------------
+
+void master_ModBus_Read_Coils(char destination_addres, short Starting_Address, short Quantity_of_coils)
+{
+    struct raw_packet* PDU = _ModBus_Read_Coils(Starting_Address, Quantity_of_coils);
+    struct raw_packet* raw = pack_data(destination_addres, PDU->packet, PDU->n);
+    // send( rs485, raw );
+    printf("PDU: ");print_raw(PDU);
+    assertion(raw);
+
     free_raw(raw);
     free_raw(PDU);
-    free(s);
+    
 }
 
 //----------------------------------------------------------------
@@ -271,19 +276,81 @@ void master_ModBus_Read_Discrete_Inputs(char slave_addr, short Starting_Address,
     struct raw_packet* PDU = _ModBus_Read_Discrete_Inputs(Starting_Address, Quantity_of_coils);
     struct raw_packet* raw = pack_data(slave_addr, PDU->packet, PDU->n);
     // send( rs485, raw );
-    printf("PDU: "); print_raw(PDU);
-    printf("raw: "); print_raw(raw);
-    char* s=unpack_data(raw->packet, raw->n);
-    printf("unpacking PDU: ");
-    for(int i=0;i<raw->n-3;i++)
-    {
-        (i)?(printf("-")):(i);
-        printf("0x%02X",s[i]&0xff);
-        fflush(stdout);
+    printf("PDU: ");print_raw(PDU);
+    assertion(raw);
 
-    }
-    printf("\n");
     free_raw(raw);
     free_raw(PDU);
 
 }
+
+void master_ModBus_Read_Holding_Registers(char slave_addr, short Starting_Address, short Quantity_of_regs)
+{
+    struct raw_packet* PDU = _ModBus_Read_Holding_Registers(Starting_Address, Quantity_of_regs);
+    struct raw_packet* raw = pack_data(slave_addr, PDU->packet, PDU->n);
+    // send( rs485, raw );
+    printf("PDU: ");print_raw(PDU);
+    assertion(raw);
+    
+    free_raw(raw);
+    free_raw(PDU);
+
+}
+
+void master_ModBus_Read_Input_Registers(char slave_addr, short Starting_Address, short Quantity_of_regs)
+{
+    struct raw_packet* PDU = _ModBus_Read_Input_Registers(Starting_Address, Quantity_of_regs);
+    struct raw_packet* raw = pack_data(slave_addr, PDU->packet, PDU->n);
+    // send( rs485, raw );
+    printf("PDU: ");print_raw(PDU);
+    assertion(raw);
+    
+    free_raw(raw);
+    free_raw(PDU);
+
+}
+
+void master_ModBus_Write_Single_Coil(char slave_addr, short Address, short Value)
+{
+    struct raw_packet* PDU = _ModBus_Write_Single_Coil(Address, Value);
+    struct raw_packet* raw = pack_data(slave_addr, PDU->packet, PDU->n);
+    // send( rs485, raw );
+    printf("PDU: ");print_raw(PDU);
+    assertion(raw);
+    
+    free_raw(raw);
+    free_raw(PDU);
+
+}
+
+void master_ModBus_Write_Single_Register(char slave_addr, short Address, short Value)
+{
+    struct raw_packet* PDU = _ModBus_Write_Single_Register(Address, Value);
+    struct raw_packet* raw = pack_data(slave_addr, PDU->packet, PDU->n);
+    // send( rs485, raw );
+    printf("PDU: ");print_raw(PDU);
+    assertion(raw);
+    
+    free_raw(raw);
+    free_raw(PDU);
+
+}
+
+void master_ModBus_Write_Multiple_Coils(char slave_addr, short Starting_Address,short Quantity_of_Outputs, char byte_count, char* Outputs_Value)
+{
+    struct raw_packet* PDU = _ModBus_Write_Multiple_Coils(Starting_Address, Quantity_of_Outputs,byte_count,Outputs_Value);
+    struct raw_packet* raw = pack_data(slave_addr, PDU->packet, PDU->n);
+    // send( rs485, raw );
+    printf("PDU: ");print_raw(PDU);
+    assertion(raw);
+    
+    free_raw(raw);
+    free_raw(PDU);
+
+}
+
+// static struct raw_packet* _ModBus_Write_Multiple_Coils(short Starting_Address, short Quantity_of_Outputs, char byte_count, char* Outputs_Value)
+// static struct raw_packet* _ModBus_Write_Single_Register(short Address, short Value)
+// _ModBus_Write_Single_Coil(short Address, short Value)
+// static struct raw_packet* _ModBus_Read_Input_Registers(short Starting_Address, short Quantity_of_regs)
+//struct raw_packet* _ModBus_Read_Holding_Registers(short Starting_Address, short Quantity_of_regs)
