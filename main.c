@@ -14,20 +14,14 @@
 int main()
 {
     //--MASTER--send
-    int destination_addres=4;
-    char data[]="Hello, hello";
-    int n = strlen(data)+1; //magic
+    int slave_addres=4;
 
+    printf("~~testing: master_ModBus_Read_Coils~~\n");
+     master_ModBus_Read_Coils(slave_addres, 0xdead, 0xf00d);
 
-    struct raw_packet* raw = pack_data(destination_addres, data, n);
-
-    printf("CRC=0x%X\n",CRC16(data,n));
-    printf("data=%s\n",data);
-
-    //--SLAVE--receive
-
-    free(unpack_data(raw->packet, raw->n));
-    free_raw(raw);
+    printf("\n~~testing: master_ModBus_Read_Discrete_Inputs~~\n");
+     master_ModBus_Read_Discrete_Inputs(slave_addres, 0xcafe, 0xbabe);
+     printf("\n");
 
 
 }

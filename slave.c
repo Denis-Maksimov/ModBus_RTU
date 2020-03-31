@@ -53,7 +53,7 @@ struct raw_packet* ModBus_Read_Coils(void* args)
     struct raw_packet* PDU = malloc(sizeof(struct raw_packet));
     int _n=0;
     int bytes=0;
-    (Quantity_of_coils&0xff)?(bytes=Quantity_of_coils+1):(bytes=Quantity_of_coils);
+    (Quantity_of_coils&0b111)?(bytes=(Quantity_of_coils>>3)+1):(bytes=(Quantity_of_coils>>3));
     _n += 1; //code func
     _n += 1; //Quantity_of_coils
     _n += bytes; //status coils
@@ -94,7 +94,7 @@ struct raw_packet* ModBus_Read_Discrete_Inputs(void* args)
     struct raw_packet* PDU = malloc(sizeof(struct raw_packet));
     int _n=0;
     int bytes=0;
-    (Quantity_of_coils&0xff)?(bytes=Quantity_of_coils+1):(bytes=Quantity_of_coils);
+    (Quantity_of_coils&0b111)?(bytes=(Quantity_of_coils>>3)+1):(bytes=(Quantity_of_coils>>3));
     _n += 1; //code func
     _n += 1; //Quantity_of_coils
     _n += bytes; //status coils
@@ -145,7 +145,7 @@ struct raw_packet* ModBus_Read_Holding_Registers(void* args)
     int count_of_coils = 0;
 
     //-- Заполняем значения регистров
-    short* reg=(&(PDU->packet)+2);
+    short* reg=(short*)(&(PDU->packet)+2);
     for (int i=0;i< Quantity_of_regs;i++) //+2 это смещение для кода функции и кол-ва байтов
     {
         reg[i] = IO_read_reg(Starting_Address+i);
@@ -177,12 +177,12 @@ struct raw_packet* ModBus_Read_Input_Registers(void* args)
     _n += bytes; //status coils
     PDU->n=_n;
     PDU->packet= malloc(_n);
-    PDU->packet[0]=MODBUS_READ_HOLDING_REGISTERS;
+    PDU->packet[0]=MODBUS_READ_INPUT_REGISTERS;
     PDU->packet[1]=bytes;
     int count_of_coils = 0;
 
     //-- Заполняем значения регистров
-    short* reg=(&(PDU->packet)+2);
+    short* reg=(short*)(&(PDU->packet)+2);
     for (int i=0;i< Quantity_of_regs;i++) //+2 это смещение для кода функции и кол-ва байтов
     {
         reg[i] = IO_read_in_reg(Starting_Address+i);
@@ -190,25 +190,125 @@ struct raw_packet* ModBus_Read_Input_Registers(void* args)
     return PDU;
 }
 //-------------------------------------------------------------
-unsigned char  ModBus_Write_Single_Coil(void*a)
+short IO_write_coil(short Address,short Value)
 {
-    //TODO
-    return MODBUS_WRITE_SINGLE_COIL;
+    //TODO!!!
+    return Value;
 }
-unsigned char  ModBus_Write_Single_Register(void*a)
+struct raw_packet* ModBus_Write_Single_Coil(void* args)
 {
-    //TODO
-    return MODBUS_WRITE_SINGLE_REGISTER;
+    short* _args = args;
+    short Address=_args[0];
+    short Value=_args[1];
+
+    struct raw_packet* PDU = malloc(sizeof(struct raw_packet));
+    int _n=0;
+
+    _n += 1; //code func
+    _n += 2; //Address
+    _n += 2; //Value
+
+    PDU->n=_n;
+    PDU->packet= malloc(_n);
+    PDU->packet[0]=MODBUS_WRITE_SINGLE_COIL;
+    PDU->packet[1]=Address;
+    int count_of_coils = 0;
+
+    //-- Заполняем значения регистров
+    short* reg=(short*)(&(PDU->packet)+1);
+    reg[0]=Address;
+    reg[1] = IO_write_coil(Address,Value);
+
+    return PDU;
 }
-unsigned char  ModBus_Write_Multiple_Coils(void*a)
+//--------------------------------------------------------------
+short IO_write_reg(short Address)
 {
-    //TODO
-    return MODBUS_WRITE_MULTIPLE_COILS;
+    //TODO!!!
+    return 0xFFFF;
 }
-unsigned char  ModBus_Write_Multiple_Register(void*a)
+struct raw_packet* ModBus_Write_Single_Register(void* args)
+{
+    short* _args = args;
+    short Address=_args[0];
+    short Value=_args[1];
+
+    struct raw_packet* PDU = malloc(sizeof(struct raw_packet));
+    int _n=0;
+
+    _n += 1; //code func
+    _n += 2; //Address
+    _n += 2; //Value
+
+    PDU->n=_n;
+    PDU->packet= malloc(_n);
+    PDU->packet[0]=MODBUS_WRITE_SINGLE_REGISTER;
+    PDU->packet[1]=Address;
+    int count_of_coils = 0;
+
+    //-- Заполняем значения регистров
+    short* reg=(short*)(&(PDU->packet)+1);
+    reg[0]=Address;
+    reg[1] = IO_write_reg(Address);
+
+    return PDU;
+
+}
+//--------------------------------------------------------------
+void IO_write_multi_coils(short start_Address,short Quantity_of_Outputs,char byte_count,char* Outputs_Value)
+{
+    for (size_t i = 0; i < Quantity_of_Outputs; ++i)
+    {
+       
+        IO_write_coil(start_Address,Outputs_Value[i-1]);
+        
+        (i&7)?(start_Address):(start_Address=+1);
+    }
+    
+}
+struct raw_packet* ModBus_Write_Multiple_Coils(void* args)
+{
+    // |0 1|2 3|4|5 6
+    // |0  |1  |2 
+    short* _word    = args;
+    char* _bytes    = args;
+    //---------------------------------
+    short start_Address   =           _word[0];
+    short Quantity_of_Outputs = _word[1];
+    
+    char byte_count =           _bytes[4];
+
+    char* Outputs_Value = (char*)malloc(byte_count);
+    _bytes+=5; //offset
+    for (size_t i = 0; i < byte_count; i++)
+    {
+        Outputs_Value[i]=_bytes[i];
+    }
+    //---------------------------------
+    IO_write_multi_coils(start_Address, Quantity_of_Outputs, byte_count, Outputs_Value);
+
+    struct raw_packet* PDU = malloc(sizeof(struct raw_packet));
+
+    PDU->n=1+2+2+1+byte_count;
+    PDU->packet= malloc(PDU->n);
+
+    PDU->packet[0]=MODBUS_WRITE_MULTIPLE_COILS;
+    short* ptr_tmp=(short*)(PDU->packet+1);
+    ptr_tmp[0]=start_Address;
+    ptr_tmp[1]=Quantity_of_Outputs;
+    PDU->packet[5]=byte_count;
+    for(int i=6;i<byte_count+6;i++)// #offset=6
+    {
+        PDU->packet[i]=Outputs_Value[i-6];
+    }
+    free(Outputs_Value);
+    return PDU;
+}
+
+struct raw_packet* ModBus_Write_Multiple_Register(void*a)
 {
     //TODO
-    return MODBUS_WRITE_MULTIPLE_REGISTER;
+    return (struct raw_packet*)MODBUS_WRITE_MULTIPLE_REGISTER;
 }
 
 
@@ -227,14 +327,24 @@ modbus_func funcs[] =
     ModBus_Read_Input_Registers,    //4 Чтение значений нескольких регистров ввода
     ModBus_Write_Single_Coil,       //5	Запись одного регистра флагов
     ModBus_Write_Single_Register,   //6	Запись одного регистра (ввода или хранения)
-    0,                              //7 reserved
-    0,                              //8 reserved
+    0,                              //7 Read Exception Status (Serial Line only)
+    0,                              //8 Diagnostics (Serial Line only)
     0,                              //9 reserved
     0,                              //10 reserved
-    0,                              //11 reserved
-    0,                              //12 reserved
+    0,                              //11 Get Comm Event Counter(Serial Line only)
+    0,                              //12 Get Comm Event Log (Serial Line only)
     0,                              //13 reserved
     0,                              //14 reserved
     ModBus_Write_Multiple_Coils,    //15 Запись нескольких регистров флагов
     ModBus_Write_Multiple_Register, //16 Запись нескольких регистров (ввода или хранения) 
+                                    //17 Report ServerID (Serial Line only)
+                                    //20 Read File Record
+                                    //21 Write File Record
+                                    //22 Mask Write Register
+                                    //23 Read/Write Multiple registers
+                                    //24 Read FIFO Queue
+                                    //43 Encapsulated Interface Transport
+                                    //43/13 CANopen General Reference Request and Response PDU
+                                    //43 / 14 (0x2B / 0x0E) Read Device Identification
+
 };

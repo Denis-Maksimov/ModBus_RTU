@@ -15,6 +15,10 @@ extern char* unpack_data(unsigned char* data, int n);
 //-- kill struct raw_packet
 extern void free_raw(struct raw_packet* raw);
 
+//-- print in stdout packet in hex mode
+extern void print_raw(struct raw_packet* raw);
 
+//-- Изменить порядок байт в слове
+extern short endian_word(short word);
 
 #endif // !MODBUS_GENERAL_H
