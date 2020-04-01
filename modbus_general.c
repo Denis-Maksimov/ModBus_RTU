@@ -8,13 +8,13 @@
 
 
 //-- упаковать данные в сырой пакет 
-struct raw_packet* pack_data(int destination_addres, char* data, int n)
+struct raw_packet* pack_data(unsigned int destination_addres, unsigned char* data, unsigned int n)
 {
     struct raw_packet* ret=(struct raw_packet*)malloc(sizeof(struct raw_packet));
      //-- prepares
 
     //
-    ret->packet=(char*)malloc(n+3);
+    ret->packet=(unsigned char*)malloc(n+3);
     //--pack address destination
     ret->packet[0]=destination_addres;
 
@@ -22,8 +22,8 @@ struct raw_packet* pack_data(int destination_addres, char* data, int n)
     memcpy(ret->packet+1,data,n);
 
     //--pack CRC16
-    ret->packet[n+1]=(char)((CRC16(data,n)&0xff00)>>8);
-    ret->packet[n+2]=(char)(CRC16(data,n)&0xff);
+    ret->packet[n+1]=(unsigned char)((CRC16(data,n)&0xff00)>>8);
+    ret->packet[n+2]=(unsigned char)(CRC16(data,n)&0xff);
     ret->n=n+1+2;//+ 1 byte addres + 2 byte crc
 
     return ret;
@@ -31,7 +31,7 @@ struct raw_packet* pack_data(int destination_addres, char* data, int n)
 }
 
 //-- распаковать данные 
-char* unpack_data(unsigned char* data, int n)
+unsigned char* unpack_data(unsigned char* data, unsigned int n)
 {
     
     //-- check address
@@ -43,7 +43,7 @@ char* unpack_data(unsigned char* data, int n)
     
 
     //-- check crc16 
-    int crc=((data[n-3]<<8)|(data[n-2]))&0xFFFF;
+    unsigned int crc=((data[n-3]<<8)|(data[n-2]))&0xFFFF;
     if(crc!=CRC16(data,n-3))
     {
         printf("error crc, 0x%X != 0x%X\n",crc,CRC16(data,n-3));
@@ -51,7 +51,7 @@ char* unpack_data(unsigned char* data, int n)
         return 0;
     }
     printf("CRC ok! crc=0x%04X\n",crc);
-    char* ret = (char*)malloc(n-3);
+    unsigned char* ret = (unsigned char*)malloc(n-3);
     memcpy(ret,data,n-3);
     // printf("data=%s\n",ret);
     return ret;
@@ -76,7 +76,7 @@ void print_raw(struct raw_packet* raw)
     
 }
 
-short endian_word(short word)
+unsigned short endian_word(unsigned short word)
 {
     return ((word&0xff)<<8)|((word&0xff00)>>8);
 }

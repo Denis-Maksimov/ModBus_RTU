@@ -17,7 +17,7 @@
 #include "crc16.h"
 #include "modbus_general.h"
 
-#include "master.h"
+//#include "master.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -46,13 +46,13 @@ char IO_read_coil(short Starting_Address)
 ///TODO: check address 
 struct raw_packet* ModBus_Read_Coils(void* args)
 {   
-    short* _args = args;
-    short Starting_Address=_args[0];
-    short Quantity_of_coils=_args[1];
-
+    printf("ModBus_Read_Coils\n");
+    unsigned short* _args =(unsigned short*) args;
+    unsigned short Starting_Address=endian_word(_args[0])&0xFFFF;
+    unsigned short Quantity_of_coils=endian_word(_args[1])&0xFFFF;
     struct raw_packet* PDU = malloc(sizeof(struct raw_packet));
-    int _n=0;
-    int bytes=0;
+    unsigned int _n=0;
+    unsigned int bytes=0;
     (Quantity_of_coils&0b111)?(bytes=(Quantity_of_coils>>3)+1):(bytes=(Quantity_of_coils>>3));
     _n += 1; //code func
     _n += 1; //Quantity_of_coils
@@ -61,7 +61,7 @@ struct raw_packet* ModBus_Read_Coils(void* args)
     PDU->packet= malloc(_n);
     PDU->packet[0]=MODBUS_READ_COILS;
     PDU->packet[1]=bytes;
-    int count_of_coils = 0;
+    unsigned int count_of_coils = 0;
 
     //-- Заполняем значения катушек (флагов, битов)
     for (int i=2;i< bytes+2;i++) //+2 это смещение для кода функции и кол-ва байтов
@@ -87,13 +87,14 @@ char IO_read_Discrete_Inputs(short Starting_Address)
 ///TODO: check address 
 struct raw_packet* ModBus_Read_Discrete_Inputs(void* args)
 {   
-    short* _args = args;
-    short Starting_Address=_args[0];
-    short Quantity_of_coils=_args[1];
+    printf("ModBus_Read_Discrete_Inputs\n");
+    unsigned short* _args =(unsigned short*) args;
+    unsigned short Starting_Address=endian_word(_args[0]);
+    unsigned short Quantity_of_coils=endian_word(_args[1]);
 
     struct raw_packet* PDU = malloc(sizeof(struct raw_packet));
-    int _n=0;
-    int bytes=0;
+    unsigned int _n=0;
+    unsigned int bytes=0;
     (Quantity_of_coils&0b111)?(bytes=(Quantity_of_coils>>3)+1):(bytes=(Quantity_of_coils>>3));
     _n += 1; //code func
     _n += 1; //Quantity_of_coils
@@ -120,21 +121,22 @@ struct raw_packet* ModBus_Read_Discrete_Inputs(void* args)
     return PDU;
 }
 //------------------------------------
-short IO_read_reg(short Starting_Address)
+unsigned short IO_read_reg(unsigned short Starting_Address)
 {
     //TODO!!!
-    return 0x01;
+    return 0x1234;
 }
 
 struct raw_packet* ModBus_Read_Holding_Registers(void* args)
 {   
-    short* _args = args;
-    short Starting_Address=_args[0];
-    short Quantity_of_regs=_args[1];
+    printf("ModBus_Read_Holding_Registers\n");
+    unsigned short* _args = (unsigned short*)args;
+    unsigned short Starting_Address=endian_word(_args[0]);
+    unsigned short Quantity_of_regs=endian_word(_args[1]);
 
     struct raw_packet* PDU = malloc(sizeof(struct raw_packet));
-    int _n=0;
-    int bytes = Quantity_of_regs*2;
+    unsigned int _n=0;
+    unsigned int bytes = Quantity_of_regs*2;
     _n += 1; //code func
     _n += 1; //Quantity_of_coils
     _n += bytes; //status coils
@@ -142,13 +144,12 @@ struct raw_packet* ModBus_Read_Holding_Registers(void* args)
     PDU->packet= malloc(_n);
     PDU->packet[0]=MODBUS_READ_HOLDING_REGISTERS;
     PDU->packet[1]=bytes;
-    int count_of_coils = 0;
 
     //-- Заполняем значения регистров
-    short* reg=(short*)(&(PDU->packet)+2);
-    for (int i=0;i< Quantity_of_regs;i++) //+2 это смещение для кода функции и кол-ва байтов
+    unsigned short* reg=(unsigned short*)((PDU->packet)+2);
+    for (unsigned short i=0;i< Quantity_of_regs;i++) //+2 это смещение для кода функции и кол-ва байтов
     {
-        reg[i] = IO_read_reg(Starting_Address+i);
+        reg[i] = endian_word(IO_read_reg(Starting_Address+i));
     }
     return PDU;
 }
@@ -165,13 +166,14 @@ short IO_read_in_reg(short Starting_Address)
 
 struct raw_packet* ModBus_Read_Input_Registers(void* args)
 {   
-    short* _args = args;
-    short Starting_Address=_args[0];
-    short Quantity_of_regs=_args[1];
+    printf("ModBus_Read_Input_Registers\n");
+    unsigned short* _args = args;
+    unsigned short Starting_Address=endian_word(_args[0]);
+    unsigned short Quantity_of_regs=endian_word(_args[1]);
 
     struct raw_packet* PDU = malloc(sizeof(struct raw_packet));
-    int _n=0;
-    int bytes = Quantity_of_regs*2;
+    unsigned int _n=0;
+    unsigned int bytes = Quantity_of_regs*2;
     _n += 1; //code func
     _n += 1; //Quantity_of_coils
     _n += bytes; //status coils
@@ -179,17 +181,17 @@ struct raw_packet* ModBus_Read_Input_Registers(void* args)
     PDU->packet= malloc(_n);
     PDU->packet[0]=MODBUS_READ_INPUT_REGISTERS;
     PDU->packet[1]=bytes;
-    int count_of_coils = 0;
 
     //-- Заполняем значения регистров
-    short* reg=(short*)(&(PDU->packet)+2);
-    for (int i=0;i< Quantity_of_regs;i++) //+2 это смещение для кода функции и кол-ва байтов
+    unsigned short* reg=(unsigned short*)((PDU->packet)+2);
+    for (unsigned int i=0;i< Quantity_of_regs;i++) //+2 это смещение для кода функции и кол-ва байтов
     {
-        reg[i] = IO_read_in_reg(Starting_Address+i);
+        reg[i] = endian_word(IO_read_in_reg(Starting_Address+i));
     }
     return PDU;
 }
 //-------------------------------------------------------------
+
 short IO_write_coil(short Address,short Value)
 {
     //TODO!!!
@@ -197,12 +199,13 @@ short IO_write_coil(short Address,short Value)
 }
 struct raw_packet* ModBus_Write_Single_Coil(void* args)
 {
-    short* _args = args;
-    short Address=_args[0];
-    short Value=_args[1];
+    printf("ModBus_Write_Single_Coil\n");
+    unsigned short* _args = (unsigned short*)args;
+    unsigned short Address=endian_word(_args[0]);
+    unsigned short Value=endian_word(_args[1]);
 
     struct raw_packet* PDU = malloc(sizeof(struct raw_packet));
-    int _n=0;
+    unsigned int _n=0;
 
     _n += 1; //code func
     _n += 2; //Address
@@ -212,29 +215,30 @@ struct raw_packet* ModBus_Write_Single_Coil(void* args)
     PDU->packet= malloc(_n);
     PDU->packet[0]=MODBUS_WRITE_SINGLE_COIL;
     PDU->packet[1]=Address;
-    int count_of_coils = 0;
+
 
     //-- Заполняем значения регистров
-    short* reg=(short*)(&(PDU->packet)+1);
-    reg[0]=Address;
-    reg[1] = IO_write_coil(Address,Value);
+    unsigned short* reg=(unsigned short*)((PDU->packet)+1);
+    reg[0] = endian_word(Address);
+    reg[1] = endian_word(IO_write_coil(Address,Value));
 
     return PDU;
 }
 //--------------------------------------------------------------
-short IO_write_reg(short Address)
+unsigned short IO_write_reg(unsigned short Address, unsigned short Value)
 {
     //TODO!!!
-    return 0xFFFF;
+    return Value;
 }
 struct raw_packet* ModBus_Write_Single_Register(void* args)
 {
-    short* _args = args;
-    short Address=_args[0];
-    short Value=_args[1];
+    printf("ModBus_Write_Single_Register\n");
+    unsigned short* _args = args;
+    unsigned short Address=endian_word(_args[0]);
+    unsigned short Value=endian_word(_args[1]);
 
     struct raw_packet* PDU = malloc(sizeof(struct raw_packet));
-    int _n=0;
+    unsigned int _n=0;
 
     _n += 1; //code func
     _n += 2; //Address
@@ -244,18 +248,18 @@ struct raw_packet* ModBus_Write_Single_Register(void* args)
     PDU->packet= malloc(_n);
     PDU->packet[0]=MODBUS_WRITE_SINGLE_REGISTER;
     PDU->packet[1]=Address;
-    int count_of_coils = 0;
+ 
 
     //-- Заполняем значения регистров
-    short* reg=(short*)(&(PDU->packet)+1);
-    reg[0]=Address;
-    reg[1] = IO_write_reg(Address);
+    unsigned short* reg=(unsigned short*)((PDU->packet)+1);
+    reg[0] = endian_word(Address);
+    reg[1] = endian_word(IO_write_reg(Address,Value));
 
     return PDU;
 
 }
 //--------------------------------------------------------------
-void IO_write_multi_coils(short start_Address,short Quantity_of_Outputs,char byte_count,char* Outputs_Value)
+void IO_write_multi_coils(unsigned short start_Address,unsigned short Quantity_of_Outputs,unsigned char byte_count,unsigned char* Outputs_Value)
 {
     for (size_t i = 0; i < Quantity_of_Outputs; ++i)
     {
@@ -268,17 +272,18 @@ void IO_write_multi_coils(short start_Address,short Quantity_of_Outputs,char byt
 }
 struct raw_packet* ModBus_Write_Multiple_Coils(void* args)
 {
+    printf("ModBus_Write_Multiple_Coils\n");
     // |0 1|2 3|4|5 6
     // |0  |1  |2 
-    short* _word    = args;
-    char* _bytes    = args;
+    unsigned short* _word    = (unsigned short*)args;
+    unsigned char* _bytes    = (unsigned char*) args;
     //---------------------------------
-    short start_Address   =           _word[0];
-    short Quantity_of_Outputs = _word[1];
+    unsigned short start_Address   =  endian_word(_word[0]);
+    unsigned short Quantity_of_Outputs =  endian_word(_word[1]);
     
-    char byte_count =           _bytes[4];
+    unsigned char byte_count =  _bytes[4];
 
-    char* Outputs_Value = (char*)malloc(byte_count);
+    unsigned char* Outputs_Value = (unsigned char*)malloc(byte_count);
     _bytes+=5; //offset
     for (size_t i = 0; i < byte_count; i++)
     {
@@ -293,9 +298,9 @@ struct raw_packet* ModBus_Write_Multiple_Coils(void* args)
     PDU->packet= malloc(PDU->n);
 
     PDU->packet[0]=MODBUS_WRITE_MULTIPLE_COILS;
-    short* ptr_tmp=(short*)(PDU->packet+1);
-    ptr_tmp[0]=start_Address;
-    ptr_tmp[1]=Quantity_of_Outputs;
+    unsigned short* ptr_tmp=(unsigned short*)(PDU->packet+1);
+    ptr_tmp[0]=endian_word(start_Address);
+    ptr_tmp[1]=endian_word(Quantity_of_Outputs);
     PDU->packet[5]=byte_count;
     for(int i=6;i<byte_count+6;i++)// #offset=6
     {
@@ -348,3 +353,17 @@ modbus_func funcs[] =
                                     //43 / 14 (0x2B / 0x0E) Read Device Identification
 
 };
+
+
+struct raw_packet* slave_receive(struct raw_packet* raw)
+{
+    unsigned char* PDU=unpack_data(raw->packet, raw->n);
+    unsigned int n=PDU[0]&0xff;
+    if(funcs[n])
+    {
+        return funcs[n](PDU+1);
+    }
+    return 0;
+}
+
+
