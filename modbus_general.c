@@ -38,7 +38,7 @@ unsigned char* unpack_data(unsigned char* data, unsigned int n)
     if (data[0]!=MY_ADDRESS){
         return 0;
     }
-    printf("address ok! address=0x%X\n", data[0]);
+    // printf("address ok! address=0x%X\n", data[0]);
     data+=1;
     
 
@@ -50,7 +50,7 @@ unsigned char* unpack_data(unsigned char* data, unsigned int n)
         fflush(stdout);
         return 0;
     }
-    printf("CRC ok! crc=0x%04X\n",crc);
+    // printf("CRC ok! crc=0x%04X\n",crc);
     unsigned char* ret = (unsigned char*)malloc(n-3);
     memcpy(ret,data,n-3);
     // printf("data=%s\n",ret);

@@ -42,67 +42,125 @@ enum modbus_cmd_t
     MODBUS_WRITE_MULTIPLE_COILS=15, //15 Запись нескольких регистров флагов
     MODBUS_WRITE_MULTIPLE_REGISTER, //16 Запись нескольких регистров (ввода или хранения) 
 };
+//----------------------------------------------
+#define MAX_COILS       20  //rw
+#define MAX_DIGITS      20  //ro
+#define MAX_HOLDING     20  //rw
+#define MAX_REG         20  //r
 
+short coils[MAX_COILS]={0};                 //rw
+short discrete_inputs[MAX_DIGITS]={0};      //ro
+short holding_registers[MAX_HOLDING]={0};   //rw
+short ro_registers[MAX_REG]={0};            //ro
 //-------------- read ----------------------
 
 //считать софтовый бит по адресу как битбэнд
 char IO_read_coil(short Address)
 {
     //TODO!!!
-    return 0x01;
+    unsigned int start_byte=Address/16;//начальный байт
+    unsigned short start_bit=Address%16;
+
+    if(start_byte>=MAX_COILS)return 0;
+
+    if(coils[start_byte]&(0x01<<start_bit))
+        return 0x01;
+    else
+        return 0x00;
+    
 }
 
 //считать железный бит по адресу как битбэнд
 char IO_read_Discrete_Inputs(short Starting_Address)
 {
     //TODO!!!
-    return 0x01;
+    unsigned int start_byte=Starting_Address/16;//начальный байт
+    unsigned short start_bit=Starting_Address%16;
+    if(start_byte>=MAX_DIGITS)return 0;
+    if(discrete_inputs[start_byte]&(0x01<<start_bit))
+        return 0x01;
+    else
+        return 0x00;
+    
 }
 
 //прочитать софтовое слово в 2 байта по адресу
-unsigned short IO_read_reg(unsigned short Starting_Address)
+unsigned short IO_read_hold_reg(unsigned short Starting_Address)
 {
     //TODO!!!
-    return 0x1234;
+    if(Starting_Address>=MAX_HOLDING)return 0;
+    return holding_registers[Starting_Address];
 }
 
 //прочитать хардварное слово в 2 байта по адресу
 short IO_read_in_reg(short Starting_Address)
 {
     //TODO!!!
-    return 0xfeca;
+    if(Starting_Address>=MAX_REG)return 0;
+    return ro_registers[Starting_Address];
 }
 //---------------- write -----------------------
 
 
+
+
+
+int IO_write_multi_coils(  unsigned short start_bit,       //адрес начала записи (побитовое смещение)
+                            unsigned short Quantity_of_Outputs, //число битов для записи
+                            unsigned short* Outputs_Values,       //значения для записи
+                            unsigned char size_of_Values){        /*sizeof(Outputs_Values)*/
+
+    
+    int success = 0;
+    int start_byte=start_bit/16;//начальный байт
+    start_bit=start_bit%16;
+
+    for (size_t i = 0; i < Quantity_of_Outputs; i++)
+    {
+       
+        // IO_write_coil(start_Address,Outputs_Value[i]);
+        if(start_byte+i/16>=MAX_COILS)return success;
+        
+
+        if(Outputs_Values[i/16]&(1<<(i%16))){
+            coils[start_byte+i/16]|=(1<<((i+start_bit)%16));
+        }else{
+            coils[start_byte+i/16]&=~(1<<((i+start_bit)%16));
+        }
+        success++;
+        
+    }
+    return success;
+    
+}
 short IO_write_coil(short Address,short Value)
 {
-    //TODO!!!
+    int start_byte=Address/16;//начальный байт
+    short start_bit=Address%16;      //начальный бит
+    if(start_byte>=MAX_COILS)return 0;
+    if(Value){
+            coils[start_byte]|=(1<<start_bit);
+        }else{
+            coils[start_byte]&=~(1<<start_bit);
+        }
     return Value;
 }
 
-void IO_write_multi_coils(  unsigned short start_Address,       //адрес начала записи
-                            unsigned short Quantity_of_Outputs, //число битов для записи
-                            unsigned char* Outputs_Value)       //значения для записи
-{
-    for (size_t i = 0; i < Quantity_of_Outputs; ++i)
-    {
-       
-        IO_write_coil(start_Address,Outputs_Value[i-1]);
-        
-        (i&7)?(start_Address):(start_Address=+1);
-    }
-    
-}
 
 unsigned short IO_write_reg(unsigned short Address, unsigned short Value)
 {
     //TODO!!!
+    if(Address>=MAX_REG)return 0;
+    holding_registers[Address]=Value;
     return Value;
 }
 
+#undef MAX_COILS
+#undef MAX_DIGITS
+#undef MAX_HOLDING 
+#undef MAX_REG 
+//--------------------------------------------------------------------------------
 
-//
 static tADU* ModBus_Read_Coils(void* args)
 {   
     printf("ModBus_Read_Coils\n");
@@ -180,7 +238,7 @@ static tADU* ModBus_Read_Discrete_Inputs(void* args)
         //заполняем биты
         for(int b=0;b<8;b++){
             
-            PDU->packet[i] |= (IO_read_Discrete_Inputs(Starting_Address)|(1<<b));
+            PDU->packet[i] |= (IO_read_Discrete_Inputs(Starting_Address)<<b);
             Starting_Address++;
             count_of_coils++;
             if(count_of_coils==Quantity_of_coils) goto l_ModBus2;
@@ -213,10 +271,10 @@ static tADU* ModBus_Read_Holding_Registers(void* args)
     PDU->packet[1]=bytes;
 
     //-- Заполняем значения регистров
-    unsigned short* reg=(unsigned short*)((PDU->packet)+2);
+    unsigned short* reg=(unsigned short*)(&PDU->packet[2]);
     for (unsigned short i=0;i< Quantity_of_regs;i++) //+2 это смещение для кода функции и кол-ва байтов
     {
-        reg[i] = endian_word(IO_read_reg(Starting_Address+i));
+        reg[i] = endian_word(IO_read_hold_reg(Starting_Address+i));
     }
     tADU* ADU = pack_data(OWN_ADDRESS, PDU->packet, PDU->n);
     free_raw(PDU);
@@ -246,7 +304,7 @@ static tADU* ModBus_Read_Input_Registers(void* args)
     PDU->packet[1]=bytes;
 
     //-- Заполняем значения регистров
-    unsigned short* reg=(unsigned short*)((PDU->packet)+2);
+    unsigned short* reg=(unsigned short*)(&PDU->packet[2]);
     for (unsigned int i=0;i< Quantity_of_regs;i++) //+2 это смещение для кода функции и кол-ва байтов
     {
         reg[i] = endian_word(IO_read_in_reg(Starting_Address+i));
@@ -279,7 +337,7 @@ static tADU* ModBus_Write_Single_Coil(void* args)
 
 
     //-- Заполняем значения регистров
-    unsigned short* reg=(unsigned short*)((PDU->packet)+1);
+    unsigned short* reg=(unsigned short*)(&PDU->packet[2]);
     reg[0] = endian_word(Address);
     reg[1] = endian_word(IO_write_coil(Address,Value));
 
@@ -310,7 +368,7 @@ static tADU* ModBus_Write_Single_Register(void* args)
  
 
     //-- Заполняем значения регистров
-    unsigned short* reg=(unsigned short*)((PDU->packet)+1);
+    unsigned short* reg=(unsigned short*)(&PDU->packet[2]);
     reg[0] = endian_word(Address);
     reg[1] = endian_word(IO_write_reg(Address,Value));
 
@@ -332,31 +390,34 @@ static tADU* ModBus_Write_Multiple_Coils(void* args)
     unsigned short start_Address   =  endian_word(_word[0]);
     unsigned short Quantity_of_Outputs =  endian_word(_word[1]);
     
-    unsigned char byte_count =  _bytes[4];
+    unsigned char byte_count =  _bytes[4]; //sizeof(Outputs_Value)
 
-    unsigned char* Outputs_Value = (unsigned char*)malloc(byte_count);
+    unsigned char* Outputs_Value = c_new_n(unsigned char,byte_count);
     _bytes+=5; //offset
     for (size_t i = 0; i < byte_count; i++)
     {
         Outputs_Value[i]=_bytes[i];
     }
     //---------------------------------
-    IO_write_multi_coils(start_Address, Quantity_of_Outputs,Outputs_Value);
+    int succes=IO_write_multi_coils(start_Address, Quantity_of_Outputs,   (unsigned short*)Outputs_Value,byte_count);
 
     tPDU* PDU = c_new(tPDU);
 
-    PDU->n=1+2+2+1+byte_count;
+    PDU->n= 1   //code func
+            +2  //start address
+            +2;  //количество записанных бит
+
     PDU->packet= malloc(PDU->n);
 
     PDU->packet[0]=MODBUS_WRITE_MULTIPLE_COILS;
     unsigned short* ptr_tmp=(unsigned short*)(PDU->packet+1);
     ptr_tmp[0]=endian_word(start_Address);
-    ptr_tmp[1]=endian_word(Quantity_of_Outputs);
-    PDU->packet[5]=byte_count;
-    for(int i=6;i<byte_count+6;i++)// #offset=6
-    {
-        PDU->packet[i]=Outputs_Value[i-6];
-    }
+    ptr_tmp[1]=endian_word(succes);
+    // PDU->packet[5]=byte_count;
+    // for(int i=6;i<byte_count+6;i++)// #offset=6
+    // {
+    //     PDU->packet[i]=Outputs_Value[i-6];
+    // }
     free(Outputs_Value);
 
     tADU* ADU = pack_data(OWN_ADDRESS, PDU->packet, PDU->n);
