@@ -140,10 +140,12 @@ short IO_write_coil(short Address,short Value)
     if(start_byte>=MAX_COILS)return 0;
     if(Value){
             coils[start_byte]|=(1<<start_bit);
+            return 0xff00;
         }else{
             coils[start_byte]&=~(1<<start_bit);
+            return 0x00;
         }
-    return Value;
+    
 }
 
 
@@ -188,6 +190,7 @@ static tADU* ModBus_Read_Coils(void* args)
     for (int i=2;i< bytes+2;i++) //+2 это смещение для кода функции и кол-ва байтов
     {//для каждого байта
         //заполняем биты
+        PDU->packet[i]=0;
         for(int b=0;b<8;b++){
             
             PDU->packet[i] |= (IO_read_coil(Starting_Address)<<b);
@@ -333,11 +336,11 @@ static tADU* ModBus_Write_Single_Coil(void* args)
     PDU->n=_n;
     PDU->packet= malloc(_n);
     PDU->packet[0]=MODBUS_WRITE_SINGLE_COIL;
-    PDU->packet[1]=Address;
+    // PDU->packet[1]=Address;
 
 
     //-- Заполняем значения регистров
-    unsigned short* reg=(unsigned short*)(&PDU->packet[2]);
+    unsigned short* reg=(unsigned short*)(&PDU->packet[1]);
     reg[0] = endian_word(Address);
     reg[1] = endian_word(IO_write_coil(Address,Value));
 

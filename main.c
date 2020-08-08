@@ -24,22 +24,25 @@ int main()
 
     //--MASTER--
     unsigned char Outputs_Value[2]={0xde,0xad};
-    TX_mts_pack[0] = master_ModBus_Write_Multiple_Coils(4,0x0000,16,sizeof(Outputs_Value), Outputs_Value);
+    TX_mts_pack[2] = master_ModBus_Write_Multiple_Coils(4,0x0000,16,sizeof(Outputs_Value), Outputs_Value);
     TX_mts_pack[1] = master_ModBus_Write_Single_Register(4,0,0x1234);
+    TX_mts_pack[0] = master_ModBus_Write_Single_Coil(4,0x0008,0);
 
     // sendRS485(TX_mts_pack)
     
         //    ---->     //
 
                     //--SLAVE--
-                    RX_stm_pack[0] = slave_receive(TX_mts_pack[0]);
+                    
                     RX_stm_pack[1] = slave_receive(TX_mts_pack[1]);
+                    RX_stm_pack[2] = slave_receive(TX_mts_pack[2]);
+                    RX_stm_pack[0] = slave_receive(TX_mts_pack[0]);
                     // RX_stm_pack[3] = slave_receive(TX_mts_pack[3]);
                     // sendRS485(RX_stm_pack)
                     puts("--Slave--");
-                    // printf("master_ModBus_Write_Single_Coil     -> ");print_raw(TX_mts_pack[0]);
+                    printf("master_ModBus_Write_Single_Coil     -> ");print_raw(TX_mts_pack[0]);
                     printf("master_ModBus_Write_Single_Register -> ");print_raw(TX_mts_pack[1]);
-                    printf("master_ModBus_Write_Multiple_Coils  -> ");print_raw(TX_mts_pack[0]);
+                    printf("master_ModBus_Write_Multiple_Coils  -> ");print_raw(TX_mts_pack[2]);
                     // print_raw(TX_mts_pack[3]);
 
         //    <----     //
@@ -48,18 +51,23 @@ int main()
     // master_unpack_response;
     puts("--Master--");
     // printf("master_ModBus_Write_Single_Coil     <- ");print_raw(RX_stm_pack[0]);
+    printf("master_ModBus_Write_Single_Coil     <- ");print_raw(RX_stm_pack[0]);
+    printf("master_ModBus_Write_Multiple_Coils  <- ");print_raw(RX_stm_pack[2]);
     printf("master_ModBus_Write_Single_Register <- ");print_raw(RX_stm_pack[1]);
-    printf("master_ModBus_Write_Multiple_Coils  <- ");print_raw(RX_stm_pack[0]);
     // print_raw(RX_stm_pack[3]);
 
         free_raw(TX_mts_pack[0]);
+        free_raw(TX_mts_pack[1]);
+        free_raw(TX_mts_pack[2]);
         free_raw(RX_stm_pack[0]);
+        free_raw(RX_stm_pack[1]);
+        free_raw(RX_stm_pack[2]);
         //-------- TEST на чтение -----------------
 
     //--MASTER--
     TX_mts_pack[0] = master_ModBus_Read_Coils(4, 0x0000, 16);
     TX_mts_pack[1] = master_ModBus_Read_Discrete_Inputs(4,0x0001,12);
-    TX_mts_pack[2] = master_ModBus_Read_Holding_Registers(4,0x0000, 12);
+    TX_mts_pack[2] = master_ModBus_Read_Holding_Registers(4,0x0000, 8);
     TX_mts_pack[3] = master_ModBus_Read_Input_Registers(4,0x0001,12);
 
     // sendRS485(TX_mts_pack)
