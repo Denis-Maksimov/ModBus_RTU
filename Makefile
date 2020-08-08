@@ -40,7 +40,7 @@ INC := inc/
 
 ##############################################################
 #flags
-CFLAGS:= -O2 -Wall $(addprefix -I,$(INC) )
+CFLAGS:= -O2 -Wall -g $(addprefix -I,$(INC) )
 #-g -rdynamic 
 
 ##############

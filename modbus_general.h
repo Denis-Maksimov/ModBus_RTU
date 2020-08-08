@@ -5,6 +5,8 @@ struct raw_packet{
     unsigned int n;          // число байт в телеграмме
     unsigned char* packet;   // сырые данные пакета (с CRC16 и шлюхами)
 };
+typedef struct raw_packet tADU;
+typedef struct raw_packet tPDU;
 
 //-- pack data
 extern struct raw_packet* pack_data(unsigned int destination_addres, unsigned char* data, unsigned int n);

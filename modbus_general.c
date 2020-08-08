@@ -7,7 +7,7 @@
 #define MY_ADDRESS 4
 
 
-//-- упаковать данные в сырой пакет 
+//-- упаковать данные в сырой пакет (PDU в ADU)
 struct raw_packet* pack_data(unsigned int destination_addres, unsigned char* data, unsigned int n)
 {
     struct raw_packet* ret=(struct raw_packet*)malloc(sizeof(struct raw_packet));
@@ -18,7 +18,7 @@ struct raw_packet* pack_data(unsigned int destination_addres, unsigned char* dat
     //--pack address destination
     ret->packet[0]=destination_addres;
 
-    //--pack data (PDU)
+    //--pack protochol data unit (PDU)
     memcpy(ret->packet+1,data,n);
 
     //--pack CRC16
