@@ -13,4 +13,7 @@ MODBUS_MASTER_API tADU* master_ModBus_Write_Single_Coil(unsigned char slave_addr
 MODBUS_MASTER_API tADU* master_ModBus_Write_Single_Register(unsigned char slave_addr,unsigned short Address,unsigned short Value);
 MODBUS_MASTER_API tADU* master_ModBus_Write_Multiple_Coils(unsigned char slave_addr,unsigned short Starting_Address,unsigned short Quantity_of_Outputs,unsigned char byte_count, unsigned char* Outputs_Value);
 
+
+
+MODBUS_MASTER_API void* master_receive(tADU* raw, void* retval);
 #endif // !MODBUS_MASTER_H

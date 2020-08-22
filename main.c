@@ -15,6 +15,7 @@
 #define c_new(t)     ((t*)malloc(sizeof(t)))
 #define c_new_n(t,n)     ((t*)malloc(sizeof(t)*n))
 //----------------------------------------
+void test();
 int main()
 {
     tADU** TX_mts_pack=  c_new_n(tADU*,4);
@@ -40,9 +41,9 @@ int main()
                     // RX_stm_pack[3] = slave_receive(TX_mts_pack[3]);
                     // sendRS485(RX_stm_pack)
                     puts("--Slave--");
-                    printf("master_ModBus_Write_Single_Coil     -> ");print_raw(TX_mts_pack[0]);
-                    printf("master_ModBus_Write_Single_Register -> ");print_raw(TX_mts_pack[1]);
-                    printf("master_ModBus_Write_Multiple_Coils  -> ");print_raw(TX_mts_pack[2]);
+                    // printf("master_ModBus_Write_Single_Coil     -> ");print_raw(TX_mts_pack[0]);
+                    // printf("master_ModBus_Write_Single_Register -> ");print_raw(TX_mts_pack[1]);
+                    // printf("master_ModBus_Write_Multiple_Coils  -> ");print_raw(TX_mts_pack[2]);
                     // print_raw(TX_mts_pack[3]);
 
         //    <----     //
@@ -51,9 +52,9 @@ int main()
     // master_unpack_response;
     puts("--Master--");
     // printf("master_ModBus_Write_Single_Coil     <- ");print_raw(RX_stm_pack[0]);
-    printf("master_ModBus_Write_Single_Coil     <- ");print_raw(RX_stm_pack[0]);
-    printf("master_ModBus_Write_Multiple_Coils  <- ");print_raw(RX_stm_pack[2]);
-    printf("master_ModBus_Write_Single_Register <- ");print_raw(RX_stm_pack[1]);
+    // printf("master_ModBus_Write_Single_Coil     <- ");print_raw(RX_stm_pack[0]);
+    // printf("master_ModBus_Write_Multiple_Coils  <- ");print_raw(RX_stm_pack[2]);
+    // printf("master_ModBus_Write_Single_Register <- ");print_raw(RX_stm_pack[1]);
     // print_raw(RX_stm_pack[3]);
 
         free_raw(TX_mts_pack[0]);
@@ -81,26 +82,63 @@ int main()
                     RX_stm_pack[3] = slave_receive(TX_mts_pack[3]);
                     // sendRS485(RX_stm_pack)
                     puts("--Slave--");
-                    printf("master_ModBus_Read_Coils             -> ");print_raw(TX_mts_pack[0]);
-                    printf("master_ModBus_Read_Discrete_Inputs   -> ");print_raw(TX_mts_pack[1]);
-                    printf("master_ModBus_Read_Holding_Registers -> ");print_raw(TX_mts_pack[2]);
-                    printf("master_ModBus_Read_Input_Registers   -> ");print_raw(TX_mts_pack[3]);
+                    // printf("master_ModBus_Read_Coils             -> ");print_raw(TX_mts_pack[0]);
+                    // printf("master_ModBus_Read_Discrete_Inputs   -> ");print_raw(TX_mts_pack[1]);
+                    // printf("master_ModBus_Read_Holding_Registers -> ");print_raw(TX_mts_pack[2]);
+                    // printf("master_ModBus_Read_Input_Registers   -> ");print_raw(TX_mts_pack[3]);
 
         //    <----     //
         
     //--MASTER--
     // master_unpack_response;
     puts("--Master--");
-    printf("master_ModBus_Read_Coils             <- ");print_raw(RX_stm_pack[0]);
-    printf("master_ModBus_Read_Discrete_Inputs   <- ");print_raw(RX_stm_pack[1]);
-    printf("master_ModBus_Read_Holding_Registers <- ");print_raw(RX_stm_pack[2]);
-    printf("master_ModBus_Read_Input_Registers   <- ");print_raw(RX_stm_pack[3]);
+    // printf("master_ModBus_Read_Coils             <- ");print_raw(RX_stm_pack[0]);
+    // printf("master_ModBus_Read_Discrete_Inputs   <- ");print_raw(RX_stm_pack[1]);
+    // printf("master_ModBus_Read_Holding_Registers <- ");print_raw(RX_stm_pack[2]);
+    // printf("master_ModBus_Read_Input_Registers   <- ");print_raw(RX_stm_pack[3]);
 
     for(int i=0;i<4;i++){
         free_raw(TX_mts_pack[i]);
         free_raw(RX_stm_pack[i]);
     }
+    free(RX_stm_pack);
+    free(TX_mts_pack);
+
+    test();
+}
 
 
+
+void test()
+{
+    tADU* TX_mts_pack;//=  c_new(tADU);
+    tADU* RX_stm_pack;//=  c_new(tADU);
+    MB_Write_Single_Coil_hdr retval;
+    //-------- TEST на запись -----------------
+
+    //--MASTER--
+    TX_mts_pack = master_ModBus_Write_Single_Coil(4,0x0008,0);
+
+    // sendRS485(TX_mts_pack)
+    
+        //    ---->     //
+
+                    //--SLAVE--
+                    
+                    RX_stm_pack = slave_receive(TX_mts_pack);
+                  
+
+        //    <----     //
+        
+    //--MASTER--
+    print_raw(RX_stm_pack);
+    
+    master_receive(RX_stm_pack, &retval);
+    printf("start:%d, res:0x%X, \n",retval.start_addr,retval.n);
+
+
+//..................freeing........................
+        free_raw(TX_mts_pack);
+        free_raw(RX_stm_pack);
 
 }

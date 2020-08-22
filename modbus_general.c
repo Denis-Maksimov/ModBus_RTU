@@ -22,8 +22,11 @@ struct raw_packet* pack_data(unsigned int destination_addres, unsigned char* dat
     memcpy(ret->packet+1,data,n);
 
     //--pack CRC16
-    ret->packet[n+1]=(unsigned char)((CRC16(data,n)&0xff00)>>8);
-    ret->packet[n+2]=(unsigned char)(CRC16(data,n)&0xff);
+    unsigned short crc=CRC16(data,n);
+    ret->packet[n+2]=crc;
+    ret->packet[n+1]=crc>>8;
+    // ret->packet[n+1]=(unsigned char)((CRC16(data,n)&0xff00)>>8);
+    // ret->packet[n+2]=(unsigned char)(CRC16(data,n)&0xff);
     ret->n=n+1+2;//+ 1 byte addres + 2 byte crc
 
     return ret;

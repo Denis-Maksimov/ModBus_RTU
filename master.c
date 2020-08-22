@@ -380,5 +380,158 @@ tADU* master_ModBus_Write_Multiple_Register(unsigned char slave_addr, unsigned s
 // PDU_ModBus_Write_Single_Coil(short Address, short Value)
 // static struct raw_packet* _ModBus_Read_Input_Registers(short Starting_Address, short Quantity_of_regs)
 //struct raw_packet* PDU_ModBus_Read_Holding_Registers(short Starting_Address, short Quantity_of_regs)
+
+
+
+
+
+//==============================================================================================================================================
+//==============================================================================================================================================
+//================================= ---------------------------------------------===============================================================
+//================================                   RESPONSE                      =============================================================
+//===================================--------------------------------------------===============================================================
+//==============================================================================================================================================
+//==============================================================================================================================================
+typedef void*(*mb_func)(void*,void*);
+
+static void* MB_Read_Coils(void*,void*);
+static void* MB_Read_Discrete_Inputs(void*,void*);
+static void* MB_Read_Holding_Registers(void*,void*);
+static void* MB_Read_Input_Registers(void*,void*);
+static void* MB_Write_Single_Coil(void*,void*);
+static void* MB_Write_Single_Register(void*,void*);
+static void* MB_Write_Multiple_Coils(void*,void*);
+static void* MB_Write_Multiple_Register(void*,void*);
+
+static mb_func funcs[] =
+{
+    0,                              //0 reserved
+    MB_Read_Coils, 	            //1 Чтение значений нескольких регистров флагов
+    MB_Read_Discrete_Inputs,    //2 Чтение значений нескольких дискретных входов
+    MB_Read_Holding_Registers,  //3	Чтение значений нескольких регистров хранения
+    MB_Read_Input_Registers,    //4 Чтение значений нескольких регистров ввода
+    //---------------------------------------------------------------------
+    MB_Write_Single_Coil,       //5	Запись одного регистра флагов
+    MB_Write_Single_Register,   //6	Запись одного регистра (ввода или хранения)
+    0,                              //7 Read Exception Status (Serial Line only)
+    0,                              //8 Diagnostics (Serial Line only)
+    0,                              //9 reserved
+    0,                              //10 reserved
+    0,                              //11 Get Comm Event Counter(Serial Line only)
+    0,                              //12 Get Comm Event Log (Serial Line only)
+    0,                              //13 reserved
+    0,                              //14 reserved
+    MB_Write_Multiple_Coils,    //15 Запись нескольких регистров флагов
+    MB_Write_Multiple_Register, //16 Запись нескольких регистров (ввода или хранения) 
+                                    //17 Report ServerID (Serial Line only)
+                                    //20 Read File Record
+                                    //21 Write File Record
+                                    //22 Mask Write Register
+                                    //23 Read/Write Multiple registers
+                                    //24 Read FIFO Queue
+                                    //43 Encapsulated Interface Transport
+                                    //43/13 CANopen General Reference Request and Response PDU
+                                    //43 / 14 (0x2B / 0x0E) Read Device Identification
+
+};
+
+
+
+void* master_receive(tADU* raw, void* retval)
+{
+    unsigned char* PDU=unpack_data(raw->packet, raw->n);
+    if(!PDU) return 0;
+    unsigned int n=PDU[0]&0xff;
+    void* rv=0;
+    if(funcs[n])
+    {
+        rv=funcs[n](PDU+1,retval);
+    }
+    free(PDU);
+    return rv;
+}
+
+
+
+
+static void* MB_Read_Coils(void* PDU,void* retval){
+    MB_Read_Coils_hdr* rv= (MB_Read_Coils_hdr*)retval;
+    MB_Read_Coils_hdr* tmp=(MB_Read_Coils_hdr*)PDU;
+
+    rv->data=c_new_n(unsigned char,tmp->bytes);
+    rv->bytes=tmp->bytes;
+    memcpy(rv->data,&(tmp->data),tmp->bytes);
+
+    return rv;
+   
+}
+
+
+static void* MB_Read_Discrete_Inputs(void* PDU,void* retval){
+
+    MB_Read_DI_hdr* rv= (MB_Read_DI_hdr*)retval;
+    MB_Read_DI_hdr* tmp=(MB_Read_DI_hdr*)PDU;
+
+    rv->data=c_new_n(unsigned char,tmp->bytes);
+    rv->bytes=tmp->bytes;
+    memcpy(rv->data,&(tmp->data),tmp->bytes);
+
+    return rv;
+   
+}
+static void* MB_Read_Holding_Registers(void* PDU,void* retval){
+    
+    MB_Read_Hold_Reg_hdr* rv= (MB_Read_Hold_Reg_hdr*)retval;
+    MB_Read_Hold_Reg_hdr* tmp=(MB_Read_Hold_Reg_hdr*)PDU;
+
+    rv->data=c_new_n(unsigned char,tmp->bytes);
+    rv->bytes=tmp->bytes;
+    memcpy(rv->data,&(tmp->data),tmp->bytes);
+
+    return rv;
+}
+static void* MB_Read_Input_Registers(void* PDU,void* retval){
+    MB_Read_Input_Reg_hdr* rv= (MB_Read_Input_Reg_hdr*)retval;
+    MB_Read_Input_Reg_hdr* tmp=(MB_Read_Input_Reg_hdr*)PDU;
+
+    rv->data=c_new_n(unsigned char,tmp->bytes);
+    rv->bytes=tmp->bytes;
+    memcpy(rv->data,&(tmp->data),tmp->bytes);
+
+    return rv;
+}
+//-----------------------------------------------------------------
+static void* MB_Write_Single_Coil(void* arg,void* retval){
+    MB_Write_Single_Coil_hdr* rv = (MB_Write_Single_Coil_hdr*)retval;
+    memcpy(rv, arg,sizeof(MB_Write_Single_Coil_hdr));
+    rv->start_addr=endian_word(((MB_Write_Single_Coil_hdr*)arg)->start_addr);
+    rv->n=endian_word(((MB_Write_Single_Coil_hdr*)arg)->n);
+    return rv;
+
+}
+static void* MB_Write_Single_Register(void* arg,void* retval){
+    MB_Write_Single_Reg_hdr* rv = (MB_Write_Single_Reg_hdr*)retval;
+    memcpy(rv, arg,sizeof(MB_Write_Single_Reg_hdr));
+    rv->start_addr=endian_word(((MB_Write_Single_Reg_hdr*)arg)->start_addr);
+    rv->n=endian_word(((MB_Write_Single_Reg_hdr*)arg)->n);
+    return rv;
+}
+static void* MB_Write_Multiple_Coils(void* arg,void* retval){
+    MB_Write_Multi_Coils_hdr* rv = (MB_Write_Multi_Coils_hdr*)retval;
+    memcpy(rv, arg,sizeof(MB_Write_Multi_Coils_hdr));
+    rv->start_addr=endian_word(((MB_Write_Multi_Coils_hdr*)arg)->start_addr);
+    rv->n=endian_word(((MB_Write_Multi_Coils_hdr*)arg)->n);
+    return rv;
+}
+static void* MB_Write_Multiple_Register(void* arg,void* retval){
+    MB_Write_Multi_Regs_hdr* rv = (MB_Write_Multi_Regs_hdr*)retval;
+    memcpy(rv, arg,sizeof(MB_Write_Multi_Regs_hdr));
+    rv->start_addr=endian_word(((MB_Write_Multi_Regs_hdr*)arg)->start_addr);
+    rv->n=endian_word(((MB_Write_Multi_Regs_hdr*)arg)->n);
+    return rv;
+}
+
+
+
 #undef c_new   
 #undef c_new_n
